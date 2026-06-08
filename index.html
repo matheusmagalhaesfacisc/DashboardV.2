@@ -6,6 +6,12 @@
 
 <title>Painel Corporativo - BI Display</title>
 
+<link rel="preconnect" href="https://script.google.com">
+<link rel="preconnect" href="https://script.googleusercontent.com">
+<link rel="preconnect" href="https://matheusmagalhaesfacisc.github.io">
+<link rel="preconnect" href="https://app.powerbi.com">
+<link rel="preconnect" href="https://docs.google.com">
+
 <style>
 body, html {
     margin: 0;
@@ -17,6 +23,12 @@ body, html {
     font-family: sans-serif;
 }
 
+#containerDashboards {
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
 iframe {
     width: 100%;
     height: 100%;
@@ -25,6 +37,7 @@ iframe {
     position: absolute;
     top: 0;
     left: 0;
+    background: #0f172a;
 }
 
 iframe.active {
@@ -38,20 +51,34 @@ iframe.escala-dash1 {
     transform: scale(0.7);
     transform-origin: 0 0;
 }
+
+#loading {
+    position: fixed;
+    inset: 0;
+    background: #0f172a;
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 22px;
+    z-index: 9999;
+}
+
+#loading.oculto {
+    display: none;
+}
 </style>
 </head>
 
 <body>
 
+<div id="loading">Carregando dashboard...</div>
 <div id="containerDashboards"></div>
 
 <script>
 /*
     Para deixar um dashboard salvo no código, mas sem aparecer:
     basta trocar ativo: true para ativo: false
-
-    Exemplo:
-    ativo: false
 */
 
 const listaDashboards = [
@@ -91,11 +118,6 @@ const listaDashboards = [
         classeExtra: ""
     },
 
-    /*
-        DASHBOARDS SALVOS, MAS DESATIVADOS
-        Eles ficam guardados no código, mas não aparecem e não entram na rotação.
-    */
-
     {
         id: "dash6",
         nome: "Dashboard em ajuste",
@@ -113,6 +135,7 @@ const listaDashboards = [
 ];
 
 const container = document.getElementById("containerDashboards");
+const loading = document.getElementById("loading");
 
 const dashboardsAtivos = listaDashboards.filter(dash => dash.ativo === true);
 
@@ -121,22 +144,72 @@ let currentIndex = 0;
 const dashboardInicial = "dash1";
 
 const tempoRotacao = 60000; // 60 segundos
-const tempoForcarRecarregamento = 900000; // 15 minutos
+const tempoForcarRecarregamentoPagina = 900000; // 15 minutos
+const tempoRefreshIndividualDashboard = 900000; // 15 minutos
+const tempoPreloadProximo = 10000; // 10 segundos depois do carregamento do atual
+
+function mostrarLoading() {
+    loading.classList.remove("oculto");
+}
+
+function ocultarLoading() {
+    loading.classList.add("oculto");
+}
 
 function criarDashboards() {
     dashboardsAtivos.forEach((dash) => {
         const iframe = document.createElement("iframe");
 
         iframe.id = dash.id;
-        iframe.src = dash.url;
         iframe.title = dash.nome;
+        iframe.dataset.src = dash.url;
+        iframe.dataset.loadedAt = "0";
+
+        iframe.setAttribute("loading", "lazy");
 
         if (dash.classeExtra) {
             iframe.classList.add(dash.classeExtra);
         }
 
+        iframe.addEventListener("load", () => {
+            iframe.dataset.loadedAt = Date.now().toString();
+
+            if (iframe.classList.contains("active")) {
+                ocultarLoading();
+
+                setTimeout(() => {
+                    preCarregarProximoDashboard();
+                }, tempoPreloadProximo);
+            }
+
+            console.log(`Log: Dashboard carregado: ${iframe.id}`);
+        });
+
         container.appendChild(iframe);
     });
+}
+
+function carregarDashboard(index, forcarRefresh = false) {
+    const iframes = document.querySelectorAll("iframe");
+    const iframe = iframes[index];
+
+    if (!iframe) return;
+
+    const agora = Date.now();
+    const ultimoCarregamento = Number(iframe.dataset.loadedAt || 0);
+    const jaTemSrc = iframe.getAttribute("src");
+
+    const precisaCarregar =
+        !jaTemSrc ||
+        forcarRefresh ||
+        (agora - ultimoCarregamento > tempoRefreshIndividualDashboard);
+
+    if (precisaCarregar) {
+        iframe.src = iframe.dataset.src;
+        console.log(`Log: Carregando/Recarregando dashboard: ${iframe.id}`);
+    }
+
+    return iframe;
 }
 
 function mostrarDashboard(index) {
@@ -146,10 +219,24 @@ function mostrarDashboard(index) {
         iframe.classList.remove("active");
     });
 
-    if (iframes[index]) {
-        iframes[index].classList.add("active");
+    const iframeAtual = carregarDashboard(index);
 
-        console.log(`Log: Exibindo dashboard ${index + 1}: ${iframes[index].id}`);
+    if (iframeAtual) {
+        iframeAtual.classList.add("active");
+
+        const jaCarregado = Number(iframeAtual.dataset.loadedAt || 0) > 0;
+
+        if (jaCarregado) {
+            ocultarLoading();
+
+            setTimeout(() => {
+                preCarregarProximoDashboard();
+            }, tempoPreloadProximo);
+        } else {
+            mostrarLoading();
+        }
+
+        console.log(`Log: Exibindo dashboard ${index + 1}: ${iframeAtual.id}`);
     }
 }
 
@@ -166,19 +253,37 @@ function definirDashboardInicial() {
 }
 
 function rotacionarDashboard() {
+    if (dashboardsAtivos.length <= 1) return;
+
     currentIndex = (currentIndex + 1) % dashboardsAtivos.length;
-
-    const iframes = document.querySelectorAll("iframe");
-
-    if (iframes[currentIndex]) {
-        // Refresh preventivo somente no dashboard que vai aparecer
-        iframes[currentIndex].src = iframes[currentIndex].src;
-    }
 
     mostrarDashboard(currentIndex);
 }
 
+function preCarregarProximoDashboard() {
+    if (dashboardsAtivos.length <= 1) return;
+
+    const proximoIndex = (currentIndex + 1) % dashboardsAtivos.length;
+
+    const iframes = document.querySelectorAll("iframe");
+    const proximoIframe = iframes[proximoIndex];
+
+    if (!proximoIframe) return;
+
+    const jaTemSrc = proximoIframe.getAttribute("src");
+
+    if (!jaTemSrc) {
+        proximoIframe.src = proximoIframe.dataset.src;
+        console.log(`Log: Pré-carregando próximo dashboard: ${proximoIframe.id}`);
+    }
+}
+
 document.addEventListener("DOMContentLoaded", () => {
+    if (dashboardsAtivos.length === 0) {
+        loading.innerText = "Nenhum dashboard ativo configurado.";
+        return;
+    }
+
     criarDashboards();
     definirDashboardInicial();
 
@@ -189,7 +294,7 @@ document.addEventListener("DOMContentLoaded", () => {
     setTimeout(() => {
         console.warn("Log: Realizando refresh sistêmico para atualização de versão.");
         window.location.reload();
-    }, tempoForcarRecarregamento);
+    }, tempoForcarRecarregamentoPagina);
 });
 </script>
 
