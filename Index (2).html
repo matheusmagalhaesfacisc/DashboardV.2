@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Painel Corporativo - BI Display</title>
+
+<style>
+body, html {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background-color: #0f172a;
+    font-family: sans-serif;
+}
+
+iframe {
+    width: 100%;
+    height: 100%;
+    border: none;
+    display: none;
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+iframe.active {
+    display: block;
+}
+
+/* Ajuste de escala específico do dashboard 1 */
+iframe.escala-dash1 {
+    width: 142% !important;
+    height: 142% !important;
+    transform: scale(0.7);
+    transform-origin: 0 0;
+}
+</style>
+</head>
+
+<body>
+
+<div id="containerDashboards"></div>
+
+<script>
+/*
+    Para deixar um dashboard salvo no código, mas sem aparecer:
+    basta trocar ativo: true para ativo: false
+
+    Exemplo:
+    ativo: false
+*/
+
+const listaDashboards = [
+    {
+        id: "dash1",
+        nome: "Google Apps Script - Dashboard Principal",
+        url: "https://script.google.com/macros/s/AKfycbwBcwf_60uKKnTnHn051Yn_cO996J5poiV_iopgu-_yMgU-KBLQlteBsr592UUNtMTLKw/exec",
+        ativo: true,
+        classeExtra: "escala-dash1"
+    },
+    {
+        id: "dash2",
+        nome: "Resumo Monitoria TV",
+        url: "https://matheusmagalhaesfacisc.github.io/resumomonitoriaTV/",
+        ativo: true,
+        classeExtra: ""
+    },
+    {
+        id: "dash3",
+        nome: "Power BI",
+        url: "https://app.powerbi.com/view?r=eyJrIjoiMjRhZmM4OTktZGE2Mi00MjliLTllZWQtY2MxMTNiMjA4NmZiIiwidCI6ImRmNGM1YmY1LWE0ZjUtNGJlOS04NDA3LTZlNjc5MDA4NjRlNyJ9",
+        ativo: true,
+        classeExtra: ""
+    },
+    {
+        id: "dash4",
+        nome: "Google Slides",
+        url: "https://docs.google.com/presentation/d/e/2PACX-1vRNRwBO-Q88uWN9vQtGZP9bIGJjf_8CDcBfyDIK84ambtAJy9PJAywiNG0SfZjE0kVAoj-JoOmv11jp/pubembed?start=true&loop=true&delayms=5000",
+        ativo: false,
+        classeExtra: ""
+    },
+    {
+        id: "dash5",
+        nome: "Google Apps Script - Comex",
+        url: "https://script.google.com/macros/s/AKfycbzrIa8-7cI1ZRmIRwXzGGy9_RMV7zafxsGvf82XdgAGQ8GkpSpwrZUDc0_pGKEsiUqpZQ/exec",
+        ativo: true,
+        classeExtra: ""
+    },
+
+    /*
+        DASHBOARDS SALVOS, MAS DESATIVADOS
+        Eles ficam guardados no código, mas não aparecem e não entram na rotação.
+    */
+
+    {
+        id: "dash6",
+        nome: "Dashboard em ajuste",
+        url: "COLE_AQUI_O_LINK_DO_DASHBOARD",
+        ativo: false,
+        classeExtra: ""
+    },
+    {
+        id: "dash7",
+        nome: "Outro dashboard em ajuste",
+        url: "COLE_AQUI_O_LINK_DO_OUTRO_DASHBOARD",
+        ativo: false,
+        classeExtra: ""
+    }
+];
+
+const container = document.getElementById("containerDashboards");
+
+const dashboardsAtivos = listaDashboards.filter(dash => dash.ativo === true);
+
+let currentIndex = 0;
+
+const dashboardInicial = "dash1";
+
+const tempoRotacao = 60000; // 60 segundos
+const tempoForcarRecarregamento = 900000; // 15 minutos
+
+function criarDashboards() {
+    dashboardsAtivos.forEach((dash) => {
+        const iframe = document.createElement("iframe");
+
+        iframe.id = dash.id;
+        iframe.src = dash.url;
+        iframe.title = dash.nome;
+
+        if (dash.classeExtra) {
+            iframe.classList.add(dash.classeExtra);
+        }
+
+        container.appendChild(iframe);
+    });
+}
+
+function mostrarDashboard(index) {
+    const iframes = document.querySelectorAll("iframe");
+
+    iframes.forEach(iframe => {
+        iframe.classList.remove("active");
+    });
+
+    if (iframes[index]) {
+        iframes[index].classList.add("active");
+
+        console.log(`Log: Exibindo dashboard ${index + 1}: ${iframes[index].id}`);
+    }
+}
+
+function definirDashboardInicial() {
+    const indexInicial = dashboardsAtivos.findIndex(dash => dash.id === dashboardInicial);
+
+    if (indexInicial >= 0) {
+        currentIndex = indexInicial;
+    } else {
+        currentIndex = 0;
+    }
+
+    mostrarDashboard(currentIndex);
+}
+
+function rotacionarDashboard() {
+    currentIndex = (currentIndex + 1) % dashboardsAtivos.length;
+
+    const iframes = document.querySelectorAll("iframe");
+
+    if (iframes[currentIndex]) {
+        // Refresh preventivo somente no dashboard que vai aparecer
+        iframes[currentIndex].src = iframes[currentIndex].src;
+    }
+
+    mostrarDashboard(currentIndex);
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+    criarDashboards();
+    definirDashboardInicial();
+
+    if (dashboardsAtivos.length > 1) {
+        setInterval(rotacionarDashboard, tempoRotacao);
+    }
+
+    setTimeout(() => {
+        console.warn("Log: Realizando refresh sistêmico para atualização de versão.");
+        window.location.reload();
+    }, tempoForcarRecarregamento);
+});
+</script>
+
+</body>
+</html>
