@@ -46,6 +46,12 @@ iframe.active {
 
 /* Ajuste de escala específico do dashboard 1 */
 iframe.escala-dash1 {
+    width: 143% !important;
+    height: 143% !important;
+    transform: scale(0.70);
+    transform-origin: 0 0;
+}
+    iframe.escala-dash5 {
     width: 118% !important;
     height: 118% !important;
     transform: scale(0.85);
@@ -115,7 +121,7 @@ const listaDashboards = [
         nome: "Google Apps Script - Comex",
         url: "https://script.google.com/macros/s/AKfycbzrIa8-7cI1ZRmIRwXzGGy9_RMV7zafxsGvf82XdgAGQ8GkpSpwrZUDc0_pGKEsiUqpZQ/exec",
         ativo: true,
-        classeExtra: ""
+        classeExtra: "escala-dash5"
     },
 
     {
