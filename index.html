@@ -1,426 +1,112 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel Corporativo - BI Display</title>
+    
+    <!-- AJUSTE DE GOVERNANÇA DE ACESSO -->
+    <meta http-equiv="Content-Security-Policy" content="frame-src 'self' https://script.google.com https://*.googleusercontent.com https://app.powerbi.com https://docs.google.com;">
+    <meta name="referrer" content="no-referrer-when-downgrade">
 
-<title>Painel Corporativo - BI Display</title>
-
-<link rel="preconnect" href="https://script.google.com">
-<link rel="preconnect" href="https://script.googleusercontent.com">
-<link rel="preconnect" href="https://matheusmagalhaesfacisc.github.io">
-<link rel="preconnect" href="https://app.powerbi.com">
-<link rel="preconnect" href="https://docs.google.com">
-
-<style>
-body, html {
-    margin: 0;
-    padding: 0;
-    width: 100%;
-    height: 100%;
-    overflow: hidden;
-    background-color: #0f172a;
-    font-family: sans-serif;
-}
-
-#containerDashboards {
-    width: 100%;
-    height: 100%;
-    position: relative;
-}
-
-iframe {
-    width: 100%;
-    height: 100%;
-    border: none;
-    display: none;
-    position: absolute;
-    top: 0;
-    left: 0;
-    background: #0f172a;
-}
-
-iframe.active {
-    display: block;
-}
-
-/* Ajuste de escala específico do dashboard 1 */
-iframe.escala-dash1 {
-    width: 118% !important;
-    height: 118% !important;
-    transform: scale(0.85);
-    transform-origin: 0 0;
-}
-    iframe.escala-dash5 {
-    width: 142% !important;
-    height: 142% !important;
-    transform: scale(0.70);
-    transform-origin: 0 0;
-}  
-#loading {
-    position: fixed;
-    inset: 0;
-    background: #0f172a;
-    color: #ffffff;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 9999;
-}
-
-.loading-conteudo {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 24px;
-    text-align: center;
-}
-
-.loading-imagem {
-    max-width: 80vw;
-    max-height: 70vh;
-    object-fit: contain;
-    animation: pulseLoading 1.8s ease-in-out infinite;
-}
-
-.loading-texto {
-    font-size: 24px;
-    font-weight: 600;
-    color: #ffffff;
-    letter-spacing: 0.5px;
-}
-
-@keyframes pulseLoading {
-    0% {
-        opacity: 0.7;
-        transform: scale(0.98);
-    }
-    50% {
-        opacity: 1;
-        transform: scale(1);
-    }
-    100% {
-        opacity: 0.7;
-        transform: scale(0.98);
-    }
-}
-
-#loading.oculto {
-    display: none;
-}
-</style>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #0f172a; font-family: sans-serif; }
+        #containerDashboards { width: 100%; height: 100%; position: relative; }
+        iframe { width: 100%; height: 100%; border: none; display: none; position: absolute; top: 0; left: 0; background: #0f172a; }
+        iframe.active { display: block; }
+        
+        /* Suas classes de escala originais */
+        iframe.escala-dash1 { width: 118% !important; height: 118% !important; transform: scale(0.85); transform-origin: 0 0; }
+        iframe.escala-dash5 { width: 142% !important; height: 142% !important; transform: scale(0.70); transform-origin: 0 0; }
+        
+        #loading { position: fixed; inset: 0; background: #0f172a; color: #ffffff; display: flex; align-items: center; justify-content: center; z-index: 9999; }
+        .loading-conteudo { width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 24px; text-align: center; }
+        .loading-imagem { max-width: 80vw; max-height: 70vh; object-fit: contain; animation: pulseLoading 1.8s ease-in-out infinite; }
+        .loading-texto { font-size: 24px; font-weight: 600; color: #ffffff; letter-spacing: 0.5px; }
+        @keyframes pulseLoading { 0% { opacity: 0.7; transform: scale(0.98); } 50% { opacity: 1; transform: scale(1); } 100% { opacity: 0.7; transform: scale(0.98); } }
+        #loading.oculto { display: none; }
+    </style>
 </head>
-
 <body>
-
-<div id="loading">
-    <div class="loading-conteudo">
-        <img 
-            src="https://drive.google.com/thumbnail?id=1Nd1wRLGCNyJntLTVcbYtWL8hlTPaPuGJ&sz=w1600" 
-            alt="Carregando dashboard FACISC"
-            class="loading-imagem"
-        >
-        <div class="loading-texto">Carregando dashboard...</div>
+    <div id="loading">
+        <div class="loading-conteudo">
+            <img src="https://drive.google.com/thumbnail?id=1Nd1wRLGCNyJntLTVcbYtWL8hlTPaPuGJ&sz=w1600" alt="Carregando" class="loading-imagem">
+            <div class="loading-texto">Carregando dashboards...</div>
+        </div>
     </div>
-</div>
-<div id="containerDashboards"></div>
+    <div id="containerDashboards"></div>
 
-<script>
-/*
-    Para deixar um dashboard salvo no código, mas sem aparecer:
-    basta trocar ativo: true para ativo: false
-*/
+    <script>
+        const listaDashboards = [
+            { id: "dash1", nome: "Resumo Monitoria TV", url: "https://matheusmagalhaesfacisc.github.io/resumomonitoriaTV/", ativo: true, classeExtra: "escala-dash1" },
+            { id: "dash4", nome: "Google Apps Script - Comex", url: "https://script.google.com/macros/s/AKfycbzrIa8-7cI1ZRmIRwXzGGy9_RMV7zafxsGvf82XdgAGQ8GkpSpwrZUDc0_pGKEsiUqpZQ/exec", ativo: true, classeExtra: "" },
+            { id: "dash5", nome: "Dados CRM pipe", url: "https://script.google.com/macros/s/AKfycbwk8CSPW-f0kNUwhXB-LGasygqnSjqQMMwYxZV4vrjt7CYvloAxUIdyvLanI2t_SvIapg/exec", ativo: true, classeExtra: "" },
+            { id: "dash6", nome: "Dashboard Principal", url: "https://script.google.com/macros/s/AKfycbwBcwf_60uKKnTnHn051Yn_cO996J5poiV_iopgu-_yMgU-KBLQlteBsr592UUNtMTLKw/exec", ativo: true, classeExtra: "escala-dash1" },
+            { id: "dash12", nome: "Relatório Mensal", url: "https://script.google.com/macros/s/AKfycbz-RSmfX5mmmFGtOZvSVUyKgMsmmptDsLkMtvg790AgN8f4StDa2xwQ_8__-Ehp_Cv87Q/exec", ativo: true, classeExtra: "escala-dash5" }
+        ];
 
-const listaDashboards = [
-    {
-        id: "dash1",
-        nome: "Resumo Monitoria TV",
-        url: "https://matheusmagalhaesfacisc.github.io/resumomonitoriaTV/",
-        ativo: true,
-        classeExtra: "escala-dash1"
-    },
-    {
-        id: "dash2",
-        nome: "Power BI",
-        url: "https://app.powerbi.com/view?r=eyJrIjoiMjRhZmM4OTktZGE2Mi00MjliLTllZWQtY2MxMTNiMjA4NmZiIiwidCI6ImRmNGM1YmY1LWE0ZjUtNGJlOS04NDA3LTZlNjc5MDA4NjRlNyJ9",
-        ativo: false,
-        classeExtra: ""
-    },
-    {
-        id: "dash3",
-        nome: "Google Slides",
-        url: "https://docs.google.com/presentation/d/e/2PACX-1vRNRwBO-Q88uWN9vQtGZP9bIGJjf_8CDcBfyDIK84ambtAJy9PJAywiNG0SfZjE0kVAoj-JoOmv11jp/pubembed?start=true&loop=true&delayms=5000",
-        ativo: false,
-        classeExtra: ""
-    },
-    {
-        id: "dash4",
-        nome: "Google Apps Script - Comex",
-        url: "https://script.google.com/macros/s/AKfycbzrIa8-7cI1ZRmIRwXzGGy9_RMV7zafxsGvf82XdgAGQ8GkpSpwrZUDc0_pGKEsiUqpZQ/exec",
-        ativo: true,
-        classeExtra: ""
-    },
+        const container = document.getElementById("containerDashboards");
+        const loading = document.getElementById("loading");
+        const dashboardsAtivos = listaDashboards.filter(dash => dash.ativo);
+        let currentIndex = 0;
+        const tempoRotacao = 60000; 
 
-    {
-        id: "dash5",
-        nome: "Dados CRM pipe",
-        url: "https://script.google.com/macros/s/AKfycbwk8CSPW-f0kNUwhXB-LGasygqnSjqQMMwYxZV4vrjt7CYvloAxUIdyvLanI2t_SvIapg/exec",
-        ativo: true,
-        classeExtra: ""
-    },
-    {
-        id: "dash6",
-        nome: "Google Apps Script - Dashboard Principal",
-        url: "https://script.google.com/macros/s/AKfycbwBcwf_60uKKnTnHn051Yn_cO996J5poiV_iopgu-_yMgU-KBLQlteBsr592UUNtMTLKw/exec",
-        ativo: true,
-        classeExtra: "escala-dash1"
-    },
-    {
-        id: "dash7",
-        nome: "Atendimento · Bee · Hora a hora",
-        url: "https://script.google.com/macros/s/AKfycbwBcwf_60uKKnTnHn051Yn_cO996J5poiV_iopgu-_yMgU-KBLQlteBsr592UUNtMTLKw/exec?produto=Bee",
-        ativo: true,
-        classeExtra: "escala-dash1"
-    },
-    {
-        id: "dash8",
-        nome: "Atendimento · Util · Hora a hora",
-        url: "https://script.google.com/macros/s/AKfycbwBcwf_60uKKnTnHn051Yn_cO996J5poiV_iopgu-_yMgU-KBLQlteBsr592UUNtMTLKw/exec?produto=Util",
-        ativo: true,
-        classeExtra: "escala-dash1"
-    },
-    {
-        id: "dash9",
-        nome: "Atendimento · Comex · Hora a hora",
-        url: "https://script.google.com/macros/s/AKfycbwBcwf_60uKKnTnHn051Yn_cO996J5poiV_iopgu-_yMgU-KBLQlteBsr592UUNtMTLKw/exec?produto=Comex",
-        ativo: true,
-        classeExtra: "escala-dash1"
-    },
-        {
-        id: "dash10",
-        nome: "Atendimento · Certificado Digital · Hora a hora",
-        url: "https://script.google.com/macros/s/AKfycbwBcwf_60uKKnTnHn051Yn_cO996J5poiV_iopgu-_yMgU-KBLQlteBsr592UUNtMTLKw/exec?produto=Certificado%20Digital",
-        ativo: true,
-        classeExtra: "escala-dash1"
-    },
-    {
-        id: "dash11",
-        nome: "Atendimento · Equifax Boa vista · Hora a hora",
-        url: "https://script.google.com/macros/s/AKfycbwBcwf_60uKKnTnHn051Yn_cO996J5poiV_iopgu-_yMgU-KBLQlteBsr592UUNtMTLKw/exec?produto=Equifax%20/%20Boa%20Vista",
-        ativo: true,
-        classeExtra: "escala-dash1"
-    },
-    {
-        id: "dash12",
-        nome: "Atendimento · Relatório Mensal",
-        url: "https://script.google.com/macros/s/AKfycbz-RSmfX5mmmFGtOZvSVUyKgMsmmptDsLkMtvg790AgN8f4StDa2xwQ_8__-Ehp_Cv87Q/exec",
-        ativo: true,
-        classeExtra: "escala-dash5"
-    },
-        {
-        id: "dash13",
-        nome: "Atendimento · Bee · Relatório Mensal",
-        url: "https://script.google.com/macros/s/AKfycbz-RSmfX5mmmFGtOZvSVUyKgMsmmptDsLkMtvg790AgN8f4StDa2xwQ_8__-Ehp_Cv87Q/exec?produto=Bee",
-        ativo: true,
-        classeExtra: "escala-dash5"
-    },
-    {
-        id: "dash14",
-        nome: "Atendimento · Util · Relatório Mensal",
-        url: "https://script.google.com/macros/s/AKfycbz-RSmfX5mmmFGtOZvSVUyKgMsmmptDsLkMtvg790AgN8f4StDa2xwQ_8__-Ehp_Cv87Q/exec?produto=Util",
-        ativo: true,
-        classeExtra: "escala-dash5"
-    },
-    {
-        id: "dash15",
-        nome: "Atendimento · Comex · Relatório Mensal",
-        url: "https://script.google.com/macros/s/AKfycbz-RSmfX5mmmFGtOZvSVUyKgMsmmptDsLkMtvg790AgN8f4StDa2xwQ_8__-Ehp_Cv87Q/exec?produto=Comex",
-        ativo: true,
-        classeExtra: "escala-dash5"
-    },
-    {
-        id: "dash16",
-        nome: "Atendimento · Certificado Digital · Relatório Mensal",
-        url: "https://script.google.com/macros/s/AKfycbz-RSmfX5mmmFGtOZvSVUyKgMsmmptDsLkMtvg790AgN8f4StDa2xwQ_8__-Ehp_Cv87Q/exec?produto=Certificado%20Digital",
-        ativo: true,
-        classeExtra: "escala-dash5"
-    },
-    {
-        id: "dash17",
-        nome: "Atendimento · Equifax Boa vista · Relatório Mensal",
-        url: "https://script.google.com/macros/s/AKfycbz-RSmfX5mmmFGtOZvSVUyKgMsmmptDsLkMtvg790AgN8f4StDa2xwQ_8__-Ehp_Cv87Q/exec?produto=Equifax%20/%20Boa%20Vista",
-        ativo: true,
-        classeExtra: "escala-dash5"
-    },
+        function mostrarLoading() { loading.classList.remove("oculto"); }
+        function ocultarLoading() { loading.classList.add("oculto"); }
 
-];
+        function criarDashboards() {
+            dashboardsAtivos.forEach((dash) => {
+                const iframe = document.createElement("iframe");
+                iframe.id = dash.id;
+                iframe.title = dash.nome;
+                iframe.dataset.src = dash.url;
+                iframe.dataset.loadedAt = "0";
+                
+                // IMPORTANTE: Sandbox para mitigar o bloqueio do Google no GitHub
+                iframe.setAttribute("sandbox", "allow-forms allow-scripts allow-same-origin allow-popups");
 
-const container = document.getElementById("containerDashboards");
-const loading = document.getElementById("loading");
+                if (dash.classeExtra) { iframe.classList.add(dash.classeExtra); }
 
-const dashboardsAtivos = listaDashboards.filter(dash => dash.ativo === true);
-
-let currentIndex = 0;
-
-const dashboardInicial = "dash1";
-
-const tempoRotacao = 60000; // 60 segundos
-const tempoForcarRecarregamentoPagina = 900000; // 15 minutos
-const tempoRefreshIndividualDashboard = 900000; // 15 minutos
-const tempoPreloadProximo = 10000; // 10 segundos depois do carregamento do atual
-
-function mostrarLoading() {
-    loading.classList.remove("oculto");
-}
-
-function ocultarLoading() {
-    loading.classList.add("oculto");
-}
-
-function criarDashboards() {
-    dashboardsAtivos.forEach((dash) => {
-        const iframe = document.createElement("iframe");
-
-        iframe.id = dash.id;
-        iframe.title = dash.nome;
-        iframe.dataset.src = dash.url;
-        iframe.dataset.loadedAt = "0";
-
-        iframe.setAttribute("loading", "lazy");
-
-        if (dash.classeExtra) {
-            iframe.classList.add(dash.classeExtra);
+                iframe.addEventListener("load", () => {
+                    iframe.dataset.loadedAt = Date.now().toString();
+                    if (iframe.classList.contains("active")) { ocultarLoading(); }
+                });
+                container.appendChild(iframe);
+            });
         }
 
-        iframe.addEventListener("load", () => {
-            iframe.dataset.loadedAt = Date.now().toString();
+        function carregarDashboard(index, forcarRefresh = false) {
+            const iframes = document.querySelectorAll("iframe");
+            const iframe = iframes[index];
+            if (!iframe) return;
+            const jaTemSrc = iframe.getAttribute("src");
+            if (!jaTemSrc || forcarRefresh) { iframe.src = iframe.dataset.src; }
+            return iframe;
+        }
 
-            if (iframe.classList.contains("active")) {
-                ocultarLoading();
-
-                setTimeout(() => {
-                    preCarregarProximoDashboard();
-                }, tempoPreloadProximo);
+        function mostrarDashboard(index) {
+            const iframes = document.querySelectorAll("iframe");
+            iframes.forEach(f => f.classList.remove("active"));
+            const iframeAtual = carregarDashboard(index);
+            if (iframeAtual) {
+                iframeAtual.classList.add("active");
+                const jaCarregado = Number(iframeAtual.dataset.loadedAt || 0) > 0;
+                if (jaCarregado) { ocultarLoading(); } else { mostrarLoading(); }
             }
-
-            console.log(`Log: Dashboard carregado: ${iframe.id}`);
-        });
-
-        container.appendChild(iframe);
-    });
-}
-
-function carregarDashboard(index, forcarRefresh = false) {
-    const iframes = document.querySelectorAll("iframe");
-    const iframe = iframes[index];
-
-    if (!iframe) return;
-
-    const agora = Date.now();
-    const ultimoCarregamento = Number(iframe.dataset.loadedAt || 0);
-    const jaTemSrc = iframe.getAttribute("src");
-
-    const precisaCarregar =
-        !jaTemSrc ||
-        forcarRefresh ||
-        (agora - ultimoCarregamento > tempoRefreshIndividualDashboard);
-
-    if (precisaCarregar) {
-        iframe.src = iframe.dataset.src;
-        console.log(`Log: Carregando/Recarregando dashboard: ${iframe.id}`);
-    }
-
-    return iframe;
-}
-
-function mostrarDashboard(index) {
-    const iframes = document.querySelectorAll("iframe");
-
-    iframes.forEach(iframe => {
-        iframe.classList.remove("active");
-    });
-
-    const iframeAtual = carregarDashboard(index);
-
-    if (iframeAtual) {
-        iframeAtual.classList.add("active");
-
-        const jaCarregado = Number(iframeAtual.dataset.loadedAt || 0) > 0;
-
-        if (jaCarregado) {
-            ocultarLoading();
-
-            setTimeout(() => {
-                preCarregarProximoDashboard();
-            }, tempoPreloadProximo);
-        } else {
-            mostrarLoading();
         }
 
-        console.log(`Log: Exibindo dashboard ${index + 1}: ${iframeAtual.id}`);
-    }
-}
+        function rotacionarDashboard() {
+            if (dashboardsAtivos.length <= 1) return;
+            currentIndex = (currentIndex + 1) % dashboardsAtivos.length;
+            mostrarDashboard(currentIndex);
+        }
 
-function definirDashboardInicial() {
-    const indexInicial = dashboardsAtivos.findIndex(dash => dash.id === dashboardInicial);
-
-    if (indexInicial >= 0) {
-        currentIndex = indexInicial;
-    } else {
-        currentIndex = 0;
-    }
-
-    mostrarDashboard(currentIndex);
-}
-
-function rotacionarDashboard() {
-    if (dashboardsAtivos.length <= 1) return;
-
-    currentIndex = (currentIndex + 1) % dashboardsAtivos.length;
-
-    mostrarDashboard(currentIndex);
-}
-
-function preCarregarProximoDashboard() {
-    if (dashboardsAtivos.length <= 1) return;
-
-    const proximoIndex = (currentIndex + 1) % dashboardsAtivos.length;
-
-    const iframes = document.querySelectorAll("iframe");
-    const proximoIframe = iframes[proximoIndex];
-
-    if (!proximoIframe) return;
-
-    const jaTemSrc = proximoIframe.getAttribute("src");
-
-    if (!jaTemSrc) {
-        proximoIframe.src = proximoIframe.dataset.src;
-        console.log(`Log: Pré-carregando próximo dashboard: ${proximoIframe.id}`);
-    }
-}
-
-document.addEventListener("DOMContentLoaded", () => {
-    if (dashboardsAtivos.length === 0) {
-        loading.innerText = "Nenhum dashboard ativo configurado.";
-        return;
-    }
-
-    criarDashboards();
-    definirDashboardInicial();
-
-    if (dashboardsAtivos.length > 1) {
-        setInterval(rotacionarDashboard, tempoRotacao);
-    }
-
-    setTimeout(() => {
-        console.warn("Log: Realizando refresh sistêmico para atualização de versão.");
-        window.location.reload();
-    }, tempoForcarRecarregamentoPagina);
-});
-</script>
-
+        document.addEventListener("DOMContentLoaded", () => {
+            if (dashboardsAtivos.length === 0) return;
+            criarDashboards();
+            mostrarDashboard(0);
+            if (dashboardsAtivos.length > 1) { setInterval(rotacionarDashboard, tempoRotacao); }
+        });
+    </script>
 </body>
 </html>
